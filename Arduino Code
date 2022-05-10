@@ -1,0 +1,73 @@
+#include <SoftwareSerial.h>
+
+//Create software serial object to communicate with SIM800L
+SoftwareSerial mySerial(9, 8); //SIM800L Tx & Rx is connected to Arduino #8 & #9
+
+
+#define USE_ARDUINO_INTERRUPTS true    // Set-up low-level interrupts for most acurate BPM math
+#include <PulseSensorPlayground.h>     // Includes the PulseSensorPlayground Library
+
+const int PulseWire = 0;       // 'S' Signal pin connected to A0
+const int LED13 = 13;          // The on-board Arduino LED
+int Threshold = 550;           // Determine which Signal to "count as a beat" and which to ignore
+int results;             
+PulseSensorPlayground pulseSensor;  // Creates an object
+
+void setup() {
+  Serial.begin(9600);
+  //Begin serial communication with Arduino and Arduino IDE (Serial Monitor)
+  
+  //Begin serial communication with Arduino and SIM800L
+  mySerial.begin(9600);
+
+  Serial.println("Initializing..."); 
+  delay(1000);
+  mySerial.println("AT"); //Once the handshake test is successful, i t will back to OK
+  updateSerial();
+
+  // Configure the PulseSensor object, by assigning our variables to it
+  pulseSensor.analogInput(PulseWire);   
+  pulseSensor.blinkOnPulse(LED13);       // Blink on-board LED with heartbeat
+  pulseSensor.setThreshold(Threshold);   
+
+  // Double-check the "pulseSensor" object was created and began seeing a signal
+  if (pulseSensor.begin()) {
+    Serial.println("PulseSensor object created!");
+  }
+}
+
+void loop() {
+  int myBPM = pulseSensor.getBeatsPerMinute();      // Calculates BPM
+
+  if (pulseSensor.sawStartOfBeat()) {  // Constantly test to see if a beat happened
+    results=myBPM-16 0;
+    Serial.println("♥  A HeartBeat Happened ! "); // If true, print a message
+    Serial.print("BPM: ");
+    Serial.println(results);                        // Print the BPM value
+    }
+  if(results>=73){
+   
+  
+    mySerial.println("ATD+ +254748613509;"); //  change ZZ with country code and xxxxxxxxxxx with phone number to dial
+    updateSerial();
+    delay(100); // wait for 20 seconds...
+   
+  }else {
+     mySerial.println("ATH"); //hang up
+     updateSerial();
+  }
+  
+}
+
+void updateSerial()
+{
+  delay(500);
+  while (Serial.available()) 
+  {
+    mySerial.write(Serial.read());//Forward what Serial received to Software Serial Port
+  }
+  while(mySerial.available()) 
+  {
+    Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
+  }
+}
